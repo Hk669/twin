@@ -2,6 +2,30 @@
 
 Running notes from building Praxis. Captured iteratively; expect churn.
 
+## 0. Altitude is the whole product (real-user feedback, the most important lesson)
+A real user ran Praxis and got a *project field-guide*, not a *portable operating-profile*:
+the output was encrusted with their repos/branches/files/tenants — "how I worked in those
+repos last month," not "how I operate." ~13% was actively wrong-context in a new project.
+The failure is structural (recurs for every persona) because the distiller grabs the most
+concrete thing on the page (behavior + proper nouns) instead of climbing to the principle.
+
+Fixes (v0.3.0), all in the distill/profile skills + harvest:
+- **Climb to the principle.** "Branches off beta" → "branches off the team's integration
+  branch, never assumes main"; the proper noun is demoted to `example`/`evidence`.
+- **Three layers, separated:** `mental_model` (how they think) / `operating_habit` (how they
+  work) / `environment` (repos/tools — disposable). Output = a portable Operating Model on
+  top + a dated, quarantined Environment Ledger.
+- **Ban proper nouns** from `principle`/`condition` (the portable fields).
+- **North-star gate** on every fact: "true & useful on a project they've never touched?"
+- **Rank by recurrence**, tag one-offs `(tentative)`.
+- **Closed 10-category list** (was 53 categories for 343 facts).
+- **Self-eval:** report a portability %, flag operating lines with proper nouns, refuse to
+  silently ship a profile that's mostly environment.
+- **Filter eval/automation transcripts at harvest** (repeated identical prompts = no signal).
+- **Split install:** Operating Model → global; Environment Ledger → per-project.
+
+The good part the user praised and we kept: context-dependent contradictions (#1 below).
+
 ## 1. Context is the whole point — facts are conditional
 A flat fact ("user skips tests") is usually wrong. The same person skips tests *when
 experimenting* and demands green CI *for an existing system*. So every fact carries a

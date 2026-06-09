@@ -12,16 +12,27 @@ Inside the harness (Claude Code or codex), the harness *is* the LLM, so there's 
 key, no model to pull, nothing to configure. It's all local, secrets are scrubbed, and you
 own the output.
 
-## The core idea: context, not flat facts
+## The core idea: a portable operating model, not a project log
 
-A flat fact like *"the user skips tests"* is usually wrong. The truth is conditional:
-skip tests *when running an experiment*, require green CI *for an existing system*. The
-apparent contradiction only exists because the context got stripped.
+The promise is to capture **how you operate** so it transfers to a project you've never
+touched — not a log of what you did last month. Four things make that real:
 
-So every fact Praxis extracts carries a **condition** — when it applies. Contradictions
-are treated as context, not conflicts to flatten. Those conditions are meant to compose
-into a decision tree your agents can follow: *in situation A do X, in situation B do Y*.
-That relational, conditional knowledge is the gold — not the bare claims.
+**Climb to the principle.** "Branches off `beta`" is a log entry; *"branches off the team's
+integration branch, never assumes main is the base"* is the operating model. Praxis climbs
+every behavior to its principle and **bans proper nouns** (repo / branch / file / tenant
+names) from the portable layer — they get demoted to evidence.
+
+**Two layers, never mixed.** The output separates a portable **Operating Model** (how you
+think and work, zero proper nouns, belongs in your global config) from a dated **Environment
+Ledger** (your current repos and tools, belongs per-project).
+
+**Context, not contradiction.** Each principle carries a **condition**: skip tests *when
+experimenting*, require green CI *for an existing system* — kept as context-dependent
+guidance, never flattened.
+
+**It grades itself.** Before shipping, Praxis reports a **portability %** and flags any
+operating-model line still carrying a proper noun, so it can't quietly hand you a profile
+that's mostly environment trivia.
 
 ## Install
 
@@ -40,12 +51,13 @@ codex plugin add praxis@praxis
 Then ask codex to "build my operating profile" (or pick the Praxis starter prompt).
 
 Either way, Praxis:
-1. Harvests your sessions from every harness on the machine (more than 10 messages each),
-   dropping tool noise and scrubbing secrets.
-2. Distills them into contextual facts — the harness is the LLM, no key. (Claude Code uses
-   parallel subagents; codex distills sequentially.)
-3. Synthesizes your `AGENTS.md` operating-profile.
-4. Offers to install it into your harness's global instructions or a project, with consent.
+1. Harvests your sessions from every harness (more than 10 messages each), dropping tool
+   noise and eval/automation runs, and scrubbing secrets.
+2. Distills them into layered, proper-noun-free principles — the harness is the LLM, no key.
+   (Claude Code uses parallel subagents; codex distills sequentially.)
+3. Synthesizes a portable **Operating Model** plus a dated **Environment Ledger**, and reports
+   its own portability score.
+4. Offers to install the Operating Model globally and the Environment Ledger per-project, with consent.
 
 ## How it works
 

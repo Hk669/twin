@@ -1,84 +1,83 @@
 ---
 name: profile
-description: Build the user's portable operating-profile from their lived agent sessions across every harness on this machine (Claude Code, codex, hermes, ...). Harvests sessions, distills how the user operates into cited contextual facts, and synthesizes a clean AGENTS.md the user's agents can load. Use when the user says "profile me", "build my operating profile", "what does my agent know about how I work", or invokes the profile command.
+description: Build the user's portable operating-profile from their lived agent sessions across every harness on this machine (Claude Code, codex, hermes, ...). Harvests sessions, distills how the user operates into layered, proper-noun-free principles, and synthesizes a portable Operating Model (plus a quarantined Environment Ledger) the user's agents can load. Use when the user says "profile me", "build my operating profile", "what does my agent know about how I work", or invokes the profile command.
 ---
 
 # Praxis — Operator Profile
 
-Turn the user's scattered agent sessions into one portable operating-profile. You (the
-harness) are the language model for this job, so there is no API key and no external
-model: you read the sessions and distill them yourself.
+Turn the user's scattered agent sessions into a PORTABLE operating-profile. You (the
+harness) are the language model for this job, so there is no API key and no external model.
+
+The promise is **transfer of how the person operates**, not a log of what they did. The
+single hardest part of this job is altitude: climb from behavior to principle, and keep
+the portable operating model strictly separate from disposable environment specifics.
 
 Everything is local. Nothing leaves the machine.
 
 ## Paths (harness-agnostic)
-- **`<plugin-root>`** = this plugin's installed directory (where `scripts/` and `skills/`
-  live). On Claude Code it is `${CLAUDE_PLUGIN_ROOT}`. In other harnesses, resolve this
-  plugin's install path and use it.
-- **`<work-dir>`** = a writable folder for output. On Claude Code use
-  `${CLAUDE_PLUGIN_DATA}`; otherwise create and use `./.praxis/`.
+- **`<plugin-root>`** = this plugin's installed directory (`${CLAUDE_PLUGIN_ROOT}` on Claude
+  Code; otherwise resolve this plugin's install path).
+- **`<work-dir>`** = a writable output folder (`${CLAUDE_PLUGIN_DATA}` on Claude Code;
+  otherwise `./.praxis/`).
 
-## Step 0 — orient
-Tell the user in one line what you're about to do: harvest their agent sessions from every
-harness on this machine, distill how they operate, and write a portable `AGENTS.md`. All
-local, secrets scrubbed. Then proceed.
-
-## Step 1 — harvest (deterministic, a script)
-Run the bundled harvester. It sweeps `~/.claude`, `~/.codex`, and the hermes sessions dir,
-keeps only sessions with more than 10 messages, drops tool-call noise, and scrubs obvious
-secrets:
+## Step 1 — harvest
+Run the bundled harvester (sweeps the harnesses, keeps sessions with more than 10 messages,
+drops tool noise + eval/automation runs, scrubs secrets):
 
 ```bash
 python "<plugin-root>/scripts/harvest.py" --out "<work-dir>/harvest"
 ```
-
-Report the per-harness counts it prints. The harvested files are provenance-headed markdown
-at `<work-dir>/harvest/*.md`. If zero sessions are harvested, tell the user and stop.
+Report the per-harness counts. If zero sessions, stop.
 
 ## Step 2 — distill (you are the LLM)
-Extract TRANSFERABLE, CONTEXTUAL operating-facts. The value is in the CONDITIONS each fact
-applies under and the relationships between facts, not flat rules. Before writing any
-claims, read the rules at `<plugin-root>/skills/distill/SKILL.md` — they govern the claim
-schema (including the all-important `condition` field) and how to treat apparent
-contradictions (context-dependent, never flattened).
+**Read `<plugin-root>/skills/distill/SKILL.md` first — it is the contract.** It governs the
+climb to principle, the three layers (`mental_model` / `operating_habit` / `environment`),
+the proper-noun ban on `principle`/`condition`, the north-star test, and the closed category
+list.
 
-Process every harvested session. **If your harness has a parallel subagent / Task tool,**
-dispatch subagents over batches of ~5 session files in parallel for speed (give each
-subagent the absolute path to `skills/distill/SKILL.md` to read first, plus its batch).
-**Otherwise, process the sessions sequentially yourself**, following the same distill rules.
+Process every harvested session. If your harness has a parallel subagent / Task tool, batch
+~5 sessions per subagent (give each the path to `skills/distill/SKILL.md` to read first);
+otherwise process sequentially. Aggregate every fact (the full schema, including `layer`,
+`why`, and `example`) into `<work-dir>/claims.jsonl`, one JSON object per line. Drop any fact
+whose evidence contains a secret.
 
-Each session yields a JSON array of objects with keys `claim`, `condition` (WHEN it applies;
-empty string for a general default), `category`, `evidence` (verbatim quote), and
-`source_session` (the file stem). Aggregate every fact into `<work-dir>/claims.jsonl`, one
-JSON object per line. Drop any fact whose evidence contains a secret.
+## Step 3 — synthesize (operating model on top, environment quarantined)
+Cluster equivalent principles across all sessions; merge near-duplicates. For each cluster,
+count the distinct sessions AND harnesses it appears in — that recurrence is your confidence.
 
-## Step 3 — synthesize the profile
-From `claims.jsonl`, write a clean operating-profile to `<work-dir>/AGENTS.md`:
+Write `<work-dir>/AGENTS.md` in TWO clearly separated parts:
 
-- Open with a 2-3 sentence summary of how this person operates.
-- Then 6-10 themed sections, each a few short imperative bullets.
-- **Preserve conditions.** When a fact has a `condition`, write it as conditional guidance,
-  not a flat rule: "When running experiments or throwaway code, defer tests to move fast;
-  for existing or production systems, require green CI before done." Never flatten a
-  context-dependent pair into one averaged rule, and never drop one side.
-- Merge true duplicates. A fact that recurs across different harnesses is high-confidence.
-- Cut anything true of almost any developer; keep only what is distinctive to THIS user.
+### Operating Model (the product — portable)
+- 8–12 first-principle heuristics drawn ONLY from `mental_model` and `operating_habit` facts.
+  **Zero proper nouns.** Every line must pass the north-star test: true and useful on a
+  project the person has never touched.
+- Group under the closed categories. Lead each group with the highest-recurrence principles.
+- Preserve conditions (context-dependent guidance, never flattened into one averaged rule).
+- Mark any principle seen in only one session `(tentative)`.
+- Where possible, state the *why* (the mental model), not just the rule.
 
-## Step 4 — deliver and offer to install
-Show the user the synthesized profile. Then offer to install it so their agents actually
-use it. Get explicit consent and show exactly what you'll write before writing:
+### Environment Ledger (quarantined — dated, disposable)
+- A separate section headed: **"Context as of <today's date> — verify before relying."**
+- All `environment` facts: repos, branches, files, tenants, tools, env vars, tables.
+- Keep these COMPLETELY out of the Operating Model.
 
-- **Global:** append/merge it into the harness's global instructions file — `~/.claude/CLAUDE.md`
-  for Claude Code, `~/.codex/AGENTS.md` for codex.
-- **Project:** write `AGENTS.md` into the current project (loaded by agents that read AGENTS.md).
-- **Neither:** leave it at `<work-dir>/AGENTS.md` for them to use however they like.
+## Step 3.5 — self-eval (gate before you ship)
+Score the Operating Model and show the user:
+- **Portability %** = fraction of Operating Model lines that pass the north-star test
+  (transferable, no proper nouns). Compute it and report the number.
+- **Proper-noun leaks** = list any Operating Model line that still contains a proper noun.
+  For each: climb it (rewrite without the noun) or move it to the Environment Ledger.
+- If a large fraction of the Operating Model is environment trivia, **say so loudly and fix
+  it before delivering.** Never silently ship a profile that is mostly environment.
 
-## Governance (always)
-- Local only. Nothing is uploaded.
-- Secrets are scrubbed at harvest; drop any that slip into a fact.
-- The user owns the output. Deleting `<work-dir>` removes everything.
-- Re-running refreshes the profile from the latest sessions.
+## Step 4 — deliver and install (route the two layers differently)
+Show the user both parts and the self-eval scores. Then offer to install, with consent, and
+show exactly what you'll write first:
+- **Operating Model → GLOBAL** instructions (`~/.claude/CLAUDE.md` for Claude Code,
+  `~/.codex/AGENTS.md` for codex). It is portable, so it belongs everywhere.
+- **Environment Ledger → PER-PROJECT** (the current project's `AGENTS.md`) or left in
+  `<work-dir>`. Never put environment trivia into the global config.
 
-## Notes
-- The harness is the LLM here — the model is free. The harvester reads every harness, not
-  just the one you're running in; the value is the merged picture no single harness has.
+## Governance
+- Local only. Secrets scrubbed at harvest; drop any that slip into a fact.
+- The user owns the output. Deleting `<work-dir>` removes everything. Re-run to refresh.

@@ -78,6 +78,18 @@ class Session:
     def messages(self) -> int:
         return len(self.turns)
 
+    @property
+    def looks_automated(self) -> bool:
+        """Eval / benchmark / automation runs repeat near-identical prompts and carry no
+        preference signal. Detect heavy user-turn repetition so they never reach distillation."""
+        users = [t.text.strip() for t in self.turns if t.role == "user" and t.text.strip()]
+        if len(users) < 4:
+            return False
+        counts = Counter(users)
+        if counts.most_common(1)[0][1] >= 4:        # same prompt 4+ times
+            return True
+        return len(counts) / len(users) < 0.5       # mostly repeats
+
 
 def scrub_secrets(text: str) -> str:
     for pat in _SECRET_PATTERNS:
@@ -241,21 +253,25 @@ def main() -> int:
     if not args.dry_run:
         out_dir.mkdir(parents=True, exist_ok=True)
 
-    scanned, written, skipped_short = Counter(), Counter(), Counter()
+    scanned, written, skipped_short, skipped_eval = Counter(), Counter(), Counter(), Counter()
     for sess in gather(harnesses, args.project):
         scanned[sess.harness] += 1
         if sess.messages <= args.min_messages:
             skipped_short[sess.harness] += 1
             continue
+        if sess.looks_automated:
+            skipped_eval[sess.harness] += 1
+            continue
         if not args.dry_run:
             (out_dir / f"{sess.out_name}.md").write_text(render_markdown(sess), encoding="utf-8")
         written[sess.harness] += 1
 
-    print(f"{'harness':8} {'scanned':>8} {'written':>8} {'<=msgs':>8}")
+    print(f"{'harness':8} {'scanned':>8} {'written':>8} {'<=msgs':>8} {'eval':>6}")
     for h in harnesses:
-        print(f"{h:8} {scanned[h]:8d} {written[h]:8d} {skipped_short[h]:8d}")
-    print(f"{'TOTAL':8} {sum(scanned.values()):8d} {sum(written.values()):8d} {sum(skipped_short.values()):8d}")
-    print(f"\nkept sessions with > {args.min_messages} messages.")
+        print(f"{h:8} {scanned[h]:8d} {written[h]:8d} {skipped_short[h]:8d} {skipped_eval[h]:6d}")
+    print(f"{'TOTAL':8} {sum(scanned.values()):8d} {sum(written.values()):8d} "
+          f"{sum(skipped_short.values()):8d} {sum(skipped_eval.values()):6d}")
+    print(f"\nkept sessions with > {args.min_messages} messages (dropped eval/automation runs).")
     if not args.dry_run:
         print(f"out: {out_dir.resolve()}")
     return 0
