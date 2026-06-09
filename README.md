@@ -51,8 +51,8 @@ codex plugin add twin@twin
 Then ask codex to "build my operating profile" (or pick the Twin starter prompt).
 
 Either way, Twin:
-1. Harvests your sessions from every harness (more than 10 messages each), dropping tool
-   noise and eval/automation runs, and scrubbing secrets.
+1. Triages your sessions across every harness (more than 10 messages each), ignoring tool
+   noise and eval/automation runs, and redacting secrets.
 2. Distills them into layered, proper-noun-free principles — the harness is the LLM, no key.
    (Claude Code uses parallel subagents; codex distills sequentially.)
 3. Synthesizes a portable **Operating Model** plus a dated **Environment Ledger**, and reports
@@ -61,23 +61,37 @@ Either way, Twin:
 
 ## How it works
 
+**No runtime code.** Twin is pure markdown — `SKILL.md` instructions plus a reference
+registry. The harness *is* the runtime: it reads the registry, finds your sessions with its
+own tools, and does the distillation itself. Nothing in this repo executes at profile time.
+
 ```
-harness sessions ──▶ harvest (script) ──▶ distill (subagents) ──▶ synthesize ──▶ AGENTS.md
-.claude/.codex/...    scrub + >10-msg      condition per fact,      merge,
-                                           contradictions=context    keep conditions
+harness sessions ──▶ triage ──────────▶ distill (subagents) ──▶ synthesize ──▶ AGENTS.md
+.claude/.codex/...    registry + Glob    raw JSONL, read direct,   merge,
+                      >10-msg gate        condition per fact         keep conditions
 ```
 
-- **harvest** — `scripts/harvest.py`: deterministic multi-harness parser (Claude Code,
-  codex, personal-agent logs). No LLM.
-- **distill** — `skills/distill/SKILL.md`: how to write *contextual* facts (each with a
-  `condition`; contradictions are context). Run by parallel subagents.
-- **synthesize** — `skills/profile/SKILL.md`: merge the facts into one `AGENTS.md`,
-  preserving conditions.
+One skill, `profile`, drives the whole thing; the concrete knowledge lives in reference files it
+loads only when it needs them (progressive disclosure):
+
+```
+plugins/twin/skills/profile/
+├── SKILL.md                       the autonomous orchestrator (triage → distill → synthesize)
+└── references/
+    ├── harnesses.md               registry: per-harness sessions + memory, JSONL schema (with
+    │                              sample lines), noise to ignore, secrets to redact, the gate
+    ├── distillation.md            how to climb a transcript into facts — with worked examples
+    └── output-format.md           exact AGENTS.md template, self-eval rubric, install routing
+```
+
+Output is two files (categories are headings, not a directory): `AGENTS.md` — the portable
+**Operating Model**, installs global — and `environment-ledger.md` — your dated specifics,
+installs per-project. Both compile from `claims.jsonl`, the regenerable source of truth.
 
 ## Governance
 
-- **Local only.** Nothing is uploaded.
-- **Secrets scrubbed** at harvest (and dropped if they slip into a fact).
+- **Local only.** Nothing is uploaded. No code runs — it's the harness reading your files.
+- **Secrets redacted** at read time (and any fact that would carry one is dropped).
 - **You own it.** Output lives in the plugin's data dir; delete it and it's gone.
 
 ## Roadmap
@@ -89,8 +103,8 @@ harness sessions ──▶ harvest (script) ──▶ distill (subagents) ──
 - **Better harness integration.** A `query_profile` MCP tool so agents pull the relevant
   operating-context mid-task, and an incremental `SessionEnd` hook that distills only the
   session that just ended (never re-running the whole history) so the profile stays live.
-- **More harness adapters.** Cursor, Windsurf, Aider, Copilot — the harvester is the
-  extension point.
+- **More harness adapters.** Cursor, Windsurf, Aider, Copilot — adding one is a few lines in
+  the `skills/profile/references/harnesses.md` registry (sessions glob + role/content fields), no code.
 
 ## Status
 

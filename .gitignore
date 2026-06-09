@@ -1,5 +1,6 @@
 # ── Personal data — NEVER commit ────────────────────────────────────────────
-# Your own harvested sessions, distilled facts, and generated profile.
+# The plugin's work-dir, distilled facts, and generated profile.
+.twin/
 harvest/
 distilled/
 claims.jsonl
