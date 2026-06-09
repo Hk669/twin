@@ -1,6 +1,6 @@
 {
   "name": "twin",
-  "version": "0.3.1",
+  "version": "0.5.0",
   "description": "Harvest your agent sessions across every harness on this machine and distill a portable operating-profile (AGENTS.md). The harness is the LLM, so no API key is needed.",
   "author": {
     "name": "HK669"
