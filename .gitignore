@@ -1,0 +1,29 @@
+# ── Personal data — NEVER commit ────────────────────────────────────────────
+# Your own harvested sessions, distilled facts, and generated profile.
+harvest/
+distilled/
+claims.jsonl
+AGENTS.md
+.facts_for_profile.md
+
+# ── Local knowledge stores / backups ────────────────────────────────────────
+.brain/
+brain-backup/
+
+# ── Internal strategy / working notes (kept local, not published) ───────────
+DESIGN.md
+DESIGN.html
+PLAN.md
+
+# ── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# ── OS / editor ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
