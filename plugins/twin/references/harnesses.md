@@ -11,6 +11,13 @@ one-liner at the bottom for cheap triage. Everything is local; nothing leaves th
 - [Claude Code](#claude-code)
 - [codex](#codex)
 - [hermes (or any personal agent)](#hermes-or-any-personal-agent)
+- [Gemini CLI](#gemini-cli)
+- [Aider](#aider)
+- [Cursor](#cursor)
+- [opencode](#opencode)
+- [GitHub Copilot](#github-copilot)
+- [Windsurf (memory only)](#windsurf-memory-only)
+- [Probe-first protocol](#probe-first-protocol)
 - [Bring your own harness (HITL)](#bring-your-own-harness-hitl)
 - [Memory files (all harnesses)](#memory-files-all-harnesses)
 - [What to ignore + never emit](#what-to-ignore--never-emit)
@@ -25,11 +32,18 @@ never assume a harness is installed.
 ---
 
 ## How a transcript is shaped
-Every harness stores a session as **JSONL** — one JSON object per line, one line per event.
+Most harnesses store a session as **JSONL** — one JSON object per line, one line per event.
 Most lines are noise (tool calls, tool results, reasoning, meta events). You want only the
 lines that are a **user or assistant message**, and from each you want the **plain text**. The
 three things that differ per harness are: (1) the glob, (2) which field holds the role, and
 (3) which field holds the content. Everything below is just those three things plus a sample.
+
+A few harnesses use other containers — a JSON array (Gemini CLI, VS Code Copilot Chat),
+markdown (Aider), or SQLite (Cursor, opencode). The job is identical: find the user/assistant
+turns, extract the plain text. For SQLite you need the `sqlite3` CLI (check
+`sqlite3 --version`; if absent, skip that harness and say so) — and **never open a live
+harness database read-write**: open read-only (`sqlite3 "file:<path>?mode=ro"`) or copy the
+file into the work-dir and read the copy.
 
 `content` is either a plain string OR an array of blocks. Extract text by concatenating the
 `.text` of every block that has one. Blocks with no `.text` field — tool calls, tool results,
@@ -90,9 +104,87 @@ Sample:
 {"role":"user","content":"summarize today's PRs and flag anything risky before I merge","timestamp":"2026-05-03T09:00:00Z"}
 ```
 
+## Gemini CLI
+Stores per-project data under `~/.gemini/tmp/<project-hash>/` (the hash is opaque — glob it).
+- **saved sessions:** `~/.gemini/tmp/*/chats/*` and `~/.gemini/tmp/*/checkpoint-*.json` —
+  JSON with a `history` array of Content objects: **role field** `.role` (`"user"` /
+  `"model"` — note `model`, not `assistant`), **content** under `.parts[].text`.
+- **prompt log:** `~/.gemini/tmp/*/logs.json` — a JSON array of the user's prompts only
+  (`.type == "user"`, text in `.message`). User-side signal only; still useful.
+
+Sample history entry:
+```json
+{"role":"user","parts":[{"text":"add retry with backoff to the fetch layer, but don't touch the cache"}]}
+```
+
+## Aider
+No app-data dir — Aider writes transcripts **into the repo it ran in**, as **markdown**:
+- **sessions:** `.aider.chat.history.md` in each repo root (one file, many sessions). Find them
+  by globbing the user's project roots (e.g. `~/projects/*/.aider.chat.history.md`); if you
+  don't know where their repos live, ask.
+- **format:** sessions are delimited by `# aider chat started at <timestamp>` headings; **user
+  turns are the lines prefixed `#### `**; assistant output is the unprefixed markdown between
+  them. Treat each `# aider chat started` block as one session for the substance gate.
+
+## Cursor
+Chat lives in **SQLite**, not files (use the read-only protocol above; skip if no `sqlite3`).
+- **db — macOS:** `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb` ·
+  **Linux:** `~/.config/Cursor/User/globalStorage/state.vscdb` ·
+  **Windows:** `~/AppData/Roaming/Cursor/User/globalStorage/state.vscdb`
+- **where:** table `cursorDiskKV`; each message is one row keyed `bubbleId:<composerId>:<bubbleId>`
+  whose value is JSON: **role field** `.type` (`1` = user, `2` = assistant), **content field**
+  `.text`. Session metadata rows are keyed `composerData:<composerId>`.
+- **extract:** `sqlite3 "file:<db>?mode=ro" "SELECT value FROM cursorDiskKV WHERE key LIKE 'bubbleId:%'"`,
+  then parse each row's JSON. Group by the composerId inside the key; one composer = one session.
+- Newer Cursor builds also write `~/.cursor/chats/**/store.db` and per-project agent
+  transcripts under `~/.cursor/projects/*/agent-transcripts/*.jsonl` — their schemas vary by
+  version, so use the probe-first protocol on those.
+
+## opencode
+Data dir is `~/.local/share/opencode` on **every** OS (yes, literally that path on Windows too).
+The format changed across versions — probe both:
+- **current (SQLite):** `~/.local/share/opencode/opencode.db` (some builds: `opencode-prod.db`).
+  Tables include `session`, `message`, `part`; rows hold JSON — role is on the message, text in
+  parts with `"type":"text"`. Apply the probe-first protocol to the exact columns.
+- **legacy (flat JSON, may coexist):** `~/.local/share/opencode/storage/message/<sessionID>/*.json`
+  (has `.role`) paired with `storage/part/<messageID>/*.json` (has `.type` / `.text`). One
+  `<sessionID>` directory = one session.
+
+## GitHub Copilot
+Two distinct surfaces:
+- **Copilot CLI:** `~/.copilot/session-state/<session-id>/events.jsonl` — JSONL event stream of
+  prompts, responses, and tool calls. Field names vary by version: probe-first, then extract
+  the user/assistant text events.
+- **Copilot Chat (VS Code):** `<vscode-user-dir>/workspaceStorage/*/chatSessions/*.json` where
+  `<vscode-user-dir>` is `~/Library/Application Support/Code/User` (macOS) ·
+  `~/.config/Code/User` (Linux) · `~/AppData/Roaming/Code/User` (Windows). JSON with a
+  `requests` array: **user text** at `.requests[n].message.text`, **assistant text** in
+  `.requests[n].response[].value`. One file = one session.
+
+Sample (Copilot Chat, abbreviated):
+```json
+{"version":3,"requests":[{"message":{"text":"why is this query slow on the orders table"},"response":[{"value":"The join is unindexed…"}]}]}
+```
+
+## Windsurf (memory only)
+Windsurf's Cascade transcripts (`~/.codeium/windsurf/cascade/`) are an **undocumented binary
+format — do not parse them**; route through HITL if the user wants them in. But its memory
+files are plain markdown and well worth reading:
+- `~/.codeium/windsurf/memories/global_rules.md` and the rest of `~/.codeium/windsurf/memories/`
+- per-project `.windsurf/rules/*.md` and legacy `.windsurfrules`
+
+## Probe-first protocol
+Some sources above have a stable LOCATION but a version-dependent SCHEMA. You are a language
+model reading the file anyway — so probe: open ONE session (or query one row), look at it, and
+identify which field carries the role and which carries the text. If the two fields are obvious
+from a sample, proceed across the harness with what you found; if they are not, skip the
+harness and tell the user what you saw. **Never guess silently and never write to a harness's
+own files or databases.** A wrong path skipped costs nothing; a misread schema fabricates a
+profile.
+
 ## Bring your own harness (HITL)
-If the user runs a harness not listed here (Cursor, Windsurf, Aider, Copilot, PI, …), you only
-need the same three things to read it — ask for them, then treat it identically:
+If the user runs a harness not listed here (Cline, Roo, Zed, PI, a company-internal agent, …),
+you only need the same three things to read it — ask for them, then treat it identically:
 1. the **sessions glob** (where its JSONL/transcripts live),
 2. the **role field** (where each line says who spoke — e.g. `role`, `type`, `payload.role`), and
 3. the **content field** (where the message text lives — e.g. `content`, `message.content`).
@@ -110,6 +202,12 @@ are strong candidates for the operating model — the user authored or confirmed
   `~/.claude/projects/<slug>/memory/*.md` and that folder's `MEMORY.md` index (auto-memory)
 - **codex:** `~/.codex/AGENTS.md` (global) · any `~/.codex/**/AGENTS.md` · `~/.codex/**/memories/*`
 - **hermes / personal agent:** `<app-root>/**/MEMORY.md` · `<app-root>/**/USER.md`
+- **Gemini CLI:** `~/.gemini/GEMINI.md` (global; `/memory add` appends under "Gemini Added
+  Memories") · per-project `GEMINI.md`
+- **Cursor:** per-project `.cursor/rules/*.mdc` · legacy `.cursorrules`
+- **Windsurf:** `~/.codeium/windsurf/memories/**` · per-project `.windsurf/rules/*.md` · legacy `.windsurfrules`
+- **opencode:** `~/.config/opencode/AGENTS.md` (global) · per-project `AGENTS.md`
+- **Copilot:** per-repo `.github/copilot-instructions.md` · `.github/instructions/*.instructions.md`
 
 A fact that appears in BOTH memory and lived transcripts is the strongest signal there is:
 authored intent confirmed by behavior. Rank it highest.
@@ -146,8 +244,11 @@ the obviously-tiny files), then confirm the real message count and the eval chec
 the survivors during distillation.
 
 ## Triage one-liner
-Run the one for your shell to list every candidate session with its line count, biggest first.
-Take the files comfortably above ~12 lines as your worklist.
+Run the one for your shell to list every candidate **file-based** session with its line count,
+biggest first. Take the files comfortably above ~12 lines as your worklist. (Line counts only
+pre-filter line-oriented files; for JSON-array sessions — Gemini, Copilot Chat — and SQLite
+harnesses — Cursor, opencode — use file size as the cheap filter and apply the real gate while
+reading.)
 
 ```bash
 # macOS / Linux (bash / zsh). nullglob so missing harnesses expand to nothing.
@@ -156,9 +257,14 @@ for f in ~/.claude/projects/*/*.jsonl \
          ~/.codex/sessions/*/*/*/rollout-*.jsonl \
          ~/Library/Application\ Support/hermes/sessions/*.jsonl \
          ~/.local/share/hermes/sessions/*.jsonl \
-         ~/.hermes/sessions/*.jsonl; do
+         ~/.hermes/sessions/*.jsonl \
+         ~/.copilot/session-state/*/events.jsonl; do
   [ -f "$f" ] && printf '%6s  %s\n' "$(wc -l < "$f")" "$f"
 done | sort -rn
+# Non-line-oriented candidates (size, not lines):
+ls -lS ~/.gemini/tmp/*/chats/* ~/.gemini/tmp/*/checkpoint-*.json \
+       ~/Library/Application\ Support/Code/User/workspaceStorage/*/chatSessions/*.json \
+       ~/.config/Code/User/workspaceStorage/*/chatSessions/*.json 2>/dev/null
 ```
 
 ```powershell
@@ -166,9 +272,14 @@ done | sort -rn
 $globs = @(
   "$HOME\.claude\projects\*\*.jsonl",
   "$HOME\.codex\sessions\*\*\*\rollout-*.jsonl",
-  "$HOME\AppData\Local\hermes\sessions\*.jsonl"
+  "$HOME\AppData\Local\hermes\sessions\*.jsonl",
+  "$HOME\.copilot\session-state\*\events.jsonl"
 )
 Get-ChildItem $globs -ErrorAction SilentlyContinue |
   ForEach-Object { [pscustomobject]@{ Lines = (Get-Content $_.FullName | Measure-Object -Line).Lines; Path = $_.FullName } } |
   Sort-Object Lines -Descending | Format-Table -AutoSize
+# Non-line-oriented candidates (size, not lines):
+Get-ChildItem "$HOME\.gemini\tmp\*\chats\*", "$HOME\.gemini\tmp\*\checkpoint-*.json", `
+  "$HOME\AppData\Roaming\Code\User\workspaceStorage\*\chatSessions\*.json" -ErrorAction SilentlyContinue |
+  Sort-Object Length -Descending | Select-Object Length, FullName
 ```
