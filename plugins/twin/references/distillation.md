@@ -52,6 +52,7 @@ contains a proper noun. If you can't phrase it without one, you haven't climbed 
 One JSON object per fact:
 ```json
 {
+  "id":         "<stable slug: kebab-case theme + source stem + counter, e.g. branching-workflow-api-a1b2-1>",
   "principle":  "<one sentence; transferable; NO proper nouns>",
   "layer":      "mental_model | operating_habit | environment",
   "condition":  "<when it applies; NO proper nouns; empty string for a general default>",
@@ -59,11 +60,19 @@ One JSON object per fact:
   "theme":      "<2–4 plain words naming the operating dimension; free text, NOT a fixed list>",
   "evidence":   "<short verbatim quote; proper nouns allowed here>",
   "example":    "<the concrete instance from this session, e.g. a branch/file/tool; allowed here>",
-  "source_session": "<file stem>"
+  "source_session": "<file stem>",
+  "relations":  []
 }
 ```
 `why` is first-class — it carries the mental model; do not skip it. `principle` and `condition`
 are the portable fields and MUST be proper-noun-free.
+
+`id` makes the claim addressable (audits, queries, and relations point at it); build it from
+the theme + source stem + a counter so parallel batches can't collide. `relations` stays an
+**empty array at extraction** — you only see one session here, so you can't know what a claim
+refines or conflicts with. The **link pass at synthesis** fills it over the whole corpus (see
+`output-format.md`); entries look like `{"type": "refines" | "conflicts_with" | "depends_on",
+"target": "<id>"}`.
 
 ## Themes, not a fixed taxonomy
 Name the **operating dimension** each fact is about in 2–4 plain words (the `theme` field) —
@@ -95,7 +104,7 @@ open the PR against that — main is what we ship."*
   ```
 - ✅ Good (climbed; the noun moves to `example`):
   ```json
-  {"principle":"branches off the team's integration branch and never assumes the default branch is the base","layer":"operating_habit","condition":"when contributing to a shared repo with a separate release branch","why":"keeps unshipped work off the branch that deploys, so an in-progress change can't reach production by accident","theme":"branching workflow","evidence":"cut it from release-2.4 … main is what we ship","example":"release-2.4 as the integration branch","source_session":"api__a1b2"}
+  {"id":"branching-workflow-api-a1b2-1","principle":"branches off the team's integration branch and never assumes the default branch is the base","layer":"operating_habit","condition":"when contributing to a shared repo with a separate release branch","why":"keeps unshipped work off the branch that deploys, so an in-progress change can't reach production by accident","theme":"branching workflow","evidence":"cut it from release-2.4 … main is what we ship","example":"release-2.4 as the integration branch","source_session":"api__a1b2","relations":[]}
   ```
 
 **Example 2 — a mental_model fact, with the *why*.**
@@ -103,14 +112,14 @@ Transcript: the user repeatedly asks the agent to *"show me the row count and th
 before you quote any top-N — I don't trust a ranking the sample can't support."*
 - ✅ Good:
   ```json
-  {"principle":"states the sample size and coverage before quoting a ranking, and refuses a top-N the data can't support","layer":"mental_model","condition":"when presenting an aggregate or ranking from queried data","why":"guards against confident conclusions drawn from thin or skewed samples","theme":"evidence before claims","evidence":"show me the row count and the date range before you quote any top-N","example":"asked for row count + min/max date on a metrics table","source_session":"analytics__9f3c"}
+  {"id":"evidence-before-claims-analytics-9f3c-1","principle":"states the sample size and coverage before quoting a ranking, and refuses a top-N the data can't support","layer":"mental_model","condition":"when presenting an aggregate or ranking from queried data","why":"guards against confident conclusions drawn from thin or skewed samples","theme":"evidence before claims","evidence":"show me the row count and the date range before you quote any top-N","example":"asked for row count + min/max date on a metrics table","source_session":"analytics__9f3c","relations":[]}
   ```
 
 **Example 3 — environment, quarantined (do NOT climb it into the operating model).**
 Transcript: *"our staging DB is at the `stg_` prefix and you need the VPN on to reach it."*
 - ✅ Good (tag as environment; it fails the north-star test):
   ```json
-  {"principle":"staging database uses a stg_ table prefix and requires VPN access","layer":"environment","condition":"","why":"current infra detail; not transferable","theme":"environment setup","evidence":"staging DB is at the stg_ prefix … VPN on to reach it","example":"stg_ prefix; VPN","source_session":"infra__7d21"}
+  {"id":"environment-setup-infra-7d21-1","principle":"staging database uses a stg_ table prefix and requires VPN access","layer":"environment","condition":"","why":"current infra detail; not transferable","theme":"environment setup","evidence":"staging DB is at the stg_ prefix … VPN on to reach it","example":"stg_ prefix; VPN","source_session":"infra__7d21","relations":[]}
   ```
   This never enters the Operating Model — it goes to the Environment Ledger (see
   `output-format.md`).
@@ -136,6 +145,9 @@ CANDIDATES (the user authored or confirmed them, so give them a higher confidenc
 - Secrets — drop the fact (see `harnesses.md` → "never emit a secret").
 - **Eval / benchmark / automation runs** — repeated near-identical prompts carry no preference
   signal; skip the whole session.
+- **Twin's own sessions** — any session that is itself a profile build / update / audit / query
+  run (including the one you are in right now). Like the memory rule above: re-ingesting your
+  own output inbreeds the profile.
 
 ## Output
 When distilling a batch, return ONLY a JSON array of fact objects in the schema above — no

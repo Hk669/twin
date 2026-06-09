@@ -29,14 +29,27 @@ config, and the Operating Model is deliberately short. Categories are **headings
 3. **Cluster** equivalent principles across sessions and harnesses; merge near-duplicates into
    one line. For each cluster, count the distinct **sessions** and **harnesses** it appears in —
    that recurrence is your confidence signal.
-4. **Derive the category set** that fits THIS person from the clustered principles and their
+4. **Link pass** — you are the only step that sees the whole corpus, so the relations are drawn
+   here (extraction leaves `relations` empty). For each pair of clustered principles, record an
+   edge on the claims when one of three relations holds, and act on it:
+   - **`conflicts_with`** — they prescribe opposite behavior. A conflict MUST resolve into a
+     conditioned pair (find the distinguishing condition in the sources and render both lines
+     with their conditions). A conflict you cannot condition is a defect: keep the
+     better-evidenced claim, tag its line `(tentative)`, and report it in the self-eval.
+   - **`refines`** — one is a sharper version of the other. Keep the sharper text, sum the
+     recurrence, point the edge at the survivor.
+   - **`depends_on`** — one presupposes the other (e.g. "requires a failing test first" depends
+     on "reproduces before fixing"). Render the prerequisite first within its category.
+   Write the edges back into `claims.jsonl` (`{"type": "...", "target": "<id>"}`) so `audit` and
+   `query` can traverse them; the compiled file shows only the *resolved* result, never raw edges.
+5. **Derive the category set** that fits THIS person from the clustered principles and their
    `theme` hints (see "Deriving categories" below). Do not reuse a fixed engineering list. Group
    the Operating-Model principles under it.
-5. **Rank** within each category by recurrence (most-recurring first); order the categories
+6. **Rank** within each category by recurrence (most-recurring first); order the categories
    themselves by total recurrence. Keep the Operating Model to **8–12 lines total** — the
    highest-signal principles, not everything.
-6. Tag any principle seen in only one session `(tentative)`.
-7. Preserve **conditions** as written — never flatten a context-dependent pair into one averaged
+7. Tag any principle seen in only one session `(tentative)`.
+8. Preserve **conditions** as written — never flatten a context-dependent pair into one averaged
    rule.
 
 ## Deriving categories — fit the role
