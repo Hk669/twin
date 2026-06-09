@@ -106,12 +106,17 @@ claude --plugin-dir ~/projects/agent-context-engine/marketplace/plugins/praxis  
 /plugin install praxis@praxis
 ```
 
-Same thin-skin pattern later gives a codex/cursor wrapper. The standalone CLI (below)
-stays the harness-neutral path.
+Same thin-skin pattern later gives a codex/cursor wrapper. (A standalone CLI for
+non-Claude-Code harnesses is a future option, deliberately not built yet — in-harness the
+LLM is free, so the plugin carries zero provider/key complexity. The external-LLM CLI was
+removed to keep one source of truth.)
 
 ## Next
-1. Refactor v0 scripts into `adapters/ processors/ sinks/` + a `pipeline.yml` runner.
-2. Keep `distill.py` as the gold-layer stage after the sink.
-3. Add an `otel` sink + map the normalized Session to GenAI spans.
-4. Spec the Adapter SDK + a CONTRIBUTING guide (the contributor experience is
-   what makes the community-adapter bet pay off).
+1. **Relational claim structure (priority).** Move facts from a flat list to a structured,
+   relational form: conditions composed into a decision tree, explicit relationships
+   between facts (refines / contradicts / depends-on), and an indexed shape an agent
+   navigates instead of reading every claim. This is the core consumption problem.
+2. **Better harness integration.** `query_profile` MCP tool (pull context mid-task) + an
+   incremental `SessionEnd` hook (distill only the session that just ended, never re-run all).
+3. More harness adapters (cursor, windsurf, aider, copilot) — `harvest.py` is the seam.
+4. Later/optional: the collector + adapter SDK + governed backend vision above; OTel sink.

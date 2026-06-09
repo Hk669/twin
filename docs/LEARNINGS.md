@@ -15,10 +15,12 @@ The Claude Code plugin distills with parallel subagents — no API key, no model
 whole bring-your-own-LLM problem disappears in-harness. `profile.py`'s OpenAI client is
 the *out-of-harness* path only.
 
-## 3. BYO-LLM, kept trivial
-One OpenAI-compatible client. The provider selects the base URL; OpenAI and Anthropic run
-through the same code path (Anthropic ships an OpenAI-compatible endpoint). No CLI
-shelling, no engine detection — just a `PROVIDERS` table.
+## 3. The harness is the LLM — so no provider was needed
+We first built a bring-your-own OpenAI-compatible client (one `PROVIDERS` table, provider
+sets the base URL) for a standalone CLI. Then realized the plugin doesn't use it: inside
+Claude Code, subagents distill and the harness synthesizes — the model is free. We deleted
+the external-LLM path and went plugin-only. One source of truth, zero provider/key config.
+The standalone CLI is a future option if a non-Claude-Code audience ever shows up.
 
 ## 4. Cross-harness is meaningfully richer than one harness
 Each tool sees a different facet: Claude Code = how you code; codex = how you run your

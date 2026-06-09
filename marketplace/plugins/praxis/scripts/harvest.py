@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 """
-harvest.py -- multi-harness session harvester (PLAN.md, cross-harness senses).
+harvest.py -- multi-harness session harvester.
 
-Sweeps every agent harness on this PC, keeps the human<->assistant conversation,
-drops tool-call noise, scrubs obvious secrets, and writes one provenance-headed
-markdown file per session into ./harvest/ for `gbrain import` + distillation.
+Sweeps every agent harness on this machine, keeps the human<->assistant conversation,
+drops tool-call noise, scrubs obvious secrets, and writes one provenance-headed markdown
+file per session into ./harvest/ for distillation.
 
-Substance gate: only sessions with MORE THAN --min-messages user+assistant
-messages are kept (default: more than 10).
+Substance gate: only sessions with MORE THAN --min-messages user+assistant messages are
+kept (default: more than 10).
 
 Harnesses:
   claude  ~/.claude/projects/<proj>/<session>.jsonl   (type=user/assistant, message.content)
   codex   ~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl (payload.role + payload.content)
   hermes  ~/AppData/Local/hermes/sessions/*.jsonl      (top-level role + content)
-  openclaw: DEFERRED -- retired; agents/ holds auth/cache (incl. live tokens), no
-            clean transcripts. Not harvested.
+  openclaw: DEFERRED -- retired; agents/ holds auth/cache (incl. live tokens), no clean
+            transcripts. Not harvested.
 
-Claude file naming is preserved (<project>__<uuid>.md) so already-distilled
-sessions stay idempotent; codex/hermes pages are prefixed by harness.
+Claude file naming is preserved (<project>__<uuid>.md); codex/hermes pages are prefixed
+by harness.
 
 Usage:
     python harvest.py                       # all harnesses, >10 messages
@@ -32,6 +32,7 @@ import argparse
 import json
 import re
 import sys
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -53,10 +54,6 @@ _SECRET_PATTERNS = [
     re.compile(r"eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{6,}"),  # JWT
 ]
 
-_TOOL_TYPES = {
-    "tool_use", "tool_result", "function_call", "function_call_output",
-    "local_shell_call", "local_shell_call_output", "custom_tool_call",
-}
 _MSG_ROLES = {"user", "assistant"}
 
 
@@ -76,8 +73,6 @@ class Session:
     first_ts: str = ""
     last_ts: str = ""
     turns: list[Turn] = field(default_factory=list)
-    used_tools: bool = False
-    parse_errors: int = 0
 
     @property
     def messages(self) -> int:
@@ -96,34 +91,25 @@ def strip_noise(text: str) -> str:
     return text.strip()
 
 
-def content_to_text(content) -> tuple[str, bool]:
-    """
-    Normalize a message `content` (str | list of blocks) to plain text across
-    harness formats. Grabs any block's 'text' field (covers Anthropic
-    {type:text}, codex {type:input_text/output_text}, hermes parts). Flags tool
-    blocks so the session is marked as tool-using. Drops thinking/images.
-    """
+def content_to_text(content) -> str:
+    """Normalize a message `content` (str | list of blocks) to plain text across harness
+    formats. Grabs any block's 'text' field (Anthropic, codex input/output_text, hermes);
+    tool/thinking/image blocks have no such field and are dropped."""
     if isinstance(content, str):
-        return content, False
+        return content
     if not isinstance(content, list):
-        return "", False
-    parts, saw_tool = [], False
+        return ""
+    parts = []
     for b in content:
-        if not isinstance(b, dict):
-            if isinstance(b, str):
-                parts.append(b)
-            continue
-        if isinstance(b.get("text"), str):
+        if isinstance(b, str):
+            parts.append(b)
+        elif isinstance(b, dict) and isinstance(b.get("text"), str):
             parts.append(b["text"])
-        elif b.get("type") in _TOOL_TYPES:
-            saw_tool = True
-    return "\n".join(p for p in parts if p), saw_tool
+    return "\n".join(p for p in parts if p)
 
 
 def _add_turn(sess: Session, role: str, content) -> None:
-    text, saw_tool = content_to_text(content)
-    if saw_tool:
-        sess.used_tools = True
+    text = content_to_text(content)
     if role == "user":
         text = strip_noise(text)
     text = scrub_secrets(text).strip()
@@ -166,10 +152,7 @@ def iter_claude_sessions(root: Path, project: str | None):
             sess = Session("claude", jsonl.stem, f"{proj_dir.name}__{jsonl.stem}")
             for obj in _read_jsonl(jsonl):
                 if obj is None:
-                    sess.parse_errors += 1
                     continue
-                if "toolUseResult" in obj:
-                    sess.used_tools = True
                 _track_meta(sess, obj)
                 if obj.get("type") not in ("user", "assistant"):
                     continue
@@ -185,17 +168,11 @@ def iter_codex_sessions(root: Path):
         sess = Session("codex", jsonl.stem, f"codex__{jsonl.stem}")
         for obj in _read_jsonl(jsonl):
             if obj is None:
-                sess.parse_errors += 1
                 continue
             _track_meta(sess, obj)
             payload = obj.get("payload")
-            if not isinstance(payload, dict):
-                continue
-            if payload.get("type") in _TOOL_TYPES:
-                sess.used_tools = True
-            role = payload.get("role")
-            if role in _MSG_ROLES:
-                _add_turn(sess, role, payload.get("content"))
+            if isinstance(payload, dict) and payload.get("role") in _MSG_ROLES:
+                _add_turn(sess, payload["role"], payload.get("content"))
         yield sess
 
 
@@ -204,12 +181,10 @@ def iter_hermes_sessions(root: Path):
         sess = Session("hermes", jsonl.stem, f"hermes__{jsonl.stem}")
         for obj in _read_jsonl(jsonl):
             if obj is None:
-                sess.parse_errors += 1
                 continue
             _track_meta(sess, obj)
-            role = obj.get("role")
-            if role in _MSG_ROLES:
-                _add_turn(sess, role, obj.get("content"))
+            if obj.get("role") in _MSG_ROLES:
+                _add_turn(sess, obj["role"], obj.get("content"))
         yield sess
 
 
@@ -244,7 +219,6 @@ def render_markdown(sess: Session) -> str:
         f"first_ts: {sess.first_ts}",
         f"last_ts: {sess.last_ts}",
         f"messages: {sess.messages}",
-        f"stateless: {'true' if not sess.used_tools else 'false'}",
         "---",
         "",
     ]
@@ -253,17 +227,13 @@ def render_markdown(sess: Session) -> str:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Harvest sessions across all harnesses -> gbrain-ready markdown.")
-    ap.add_argument("--harness", default="claude,codex,hermes",
-                    help="comma list of harnesses to harvest")
+    ap = argparse.ArgumentParser(description="Harvest sessions across all harnesses into markdown.")
+    ap.add_argument("--harness", default="claude,codex,hermes", help="comma list of harnesses")
     ap.add_argument("--out", default="./harvest")
     ap.add_argument("--project", default=None, help="claude only: limit to one project dir")
     ap.add_argument("--min-messages", type=int, default=10,
                     help="keep sessions with MORE THAN this many user+assistant messages")
-    ap.add_argument("--stateless-only", action="store_true",
-                    help="keep only pure-conversation sessions (for the eval task set, not harvest)")
-    ap.add_argument("--limit", type=int, default=0)
-    ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--dry-run", action="store_true", help="scan + report, write nothing")
     args = ap.parse_args()
 
     harnesses = [h.strip() for h in args.harness.split(",") if h.strip() in HARNESS_DIRS]
@@ -271,33 +241,20 @@ def main() -> int:
     if not args.dry_run:
         out_dir.mkdir(parents=True, exist_ok=True)
 
-    from collections import Counter
-    scanned = Counter()
-    written = Counter()
-    skipped_short = Counter()
-    skipped_stateful = Counter()
-    total_written = 0
-
+    scanned, written, skipped_short = Counter(), Counter(), Counter()
     for sess in gather(harnesses, args.project):
         scanned[sess.harness] += 1
         if sess.messages <= args.min_messages:
             skipped_short[sess.harness] += 1
             continue
-        if args.stateless_only and sess.used_tools:
-            skipped_stateful[sess.harness] += 1
-            continue
         if not args.dry_run:
             (out_dir / f"{sess.out_name}.md").write_text(render_markdown(sess), encoding="utf-8")
         written[sess.harness] += 1
-        total_written += 1
-        if args.limit and total_written >= args.limit:
-            break
 
-    print(f"{'harness':8} {'scanned':>8} {'written':>8} {'<=msgs':>8} {'stateful':>9}")
+    print(f"{'harness':8} {'scanned':>8} {'written':>8} {'<=msgs':>8}")
     for h in harnesses:
-        print(f"{h:8} {scanned[h]:8d} {written[h]:8d} {skipped_short[h]:8d} {skipped_stateful[h]:9d}")
-    print(f"{'TOTAL':8} {sum(scanned.values()):8d} {sum(written.values()):8d} "
-          f"{sum(skipped_short.values()):8d} {sum(skipped_stateful.values()):9d}")
+        print(f"{h:8} {scanned[h]:8d} {written[h]:8d} {skipped_short[h]:8d}")
+    print(f"{'TOTAL':8} {sum(scanned.values()):8d} {sum(written.values()):8d} {sum(skipped_short.values()):8d}")
     print(f"\nkept sessions with > {args.min_messages} messages.")
     if not args.dry_run:
         print(f"out: {out_dir.resolve()}")
