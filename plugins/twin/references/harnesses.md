@@ -29,6 +29,11 @@ Windows). `~/.claude` and `~/.codex` live in the home dir on **every** platform;
 personal-agent app-data dir is OS-specific. Glob first — paths that don't exist are skipped;
 never assume a harness is installed.
 
+The globs, samples, and one-liners below are the **cheap path, not a cage** — if you can find
+the same data a better way, do. What is binding everywhere are the three **contracts**:
+**read-only** (never write to a harness's files or databases), the **substance gate**, and the
+**redaction rules**. Everything else is advice to save you time.
+
 ---
 
 ## How a transcript is shaped
@@ -233,19 +238,21 @@ one.** Shapes to catch:
 
 ## The substance gate
 Keep a session only if BOTH hold:
-1. **More than 10 user+assistant messages.** Short one-shots carry no operating signal.
+1. **More than 7 user messages.** Count the USER's turns, not the total — the user's turns are
+   where the operating signal lives, and assistant verbosity says nothing about the person.
+   Short one-shots carry none.
 2. **Not an eval / benchmark / automation run.** If the user turns are the same prompt repeated
    (≈4+ identical, or under half of them unique), it is a loop with no preference signal — skip
    the whole session.
 
 You do not need to fully read every file to apply gate #1. **Triage cheaply first** with a line
-count (a JSONL line ≈ one event, so it is a generous upper bound on messages — enough to discard
-the obviously-tiny files), then confirm the real message count and the eval check while reading
-the survivors during distillation.
+count (a JSONL line ≈ one event; 8+ user turns with replies means ≥ ~15 lines, so the count is
+a generous pre-filter for discarding the obviously-tiny files), then confirm the real user-turn
+count and the eval check while reading the survivors during distillation.
 
 ## Triage one-liner
 Run the one for your shell to list every candidate **file-based** session with its line count,
-biggest first. Take the files comfortably above ~12 lines as your worklist. (Line counts only
+biggest first. Take the files comfortably above ~15 lines as your worklist. (Line counts only
 pre-filter line-oriented files; for JSON-array sessions — Gemini, Copilot Chat — and SQLite
 harnesses — Cursor, opencode — use file size as the cheap filter and apply the real gate while
 reading.)

@@ -56,8 +56,9 @@ codex plugin add twin@twin
 Then ask codex to "build my operating profile" (or pick the Twin starter prompt).
 
 Either way, Twin:
-1. Triages your sessions across every harness (more than 10 messages each), ignoring tool
-   noise and eval/automation runs, and redacting secrets.
+1. Triages your sessions across every harness (more than 7 *user* messages each — the user's
+   turns are where the signal lives), ignoring tool noise and eval/automation runs, and
+   redacting secrets.
 2. Distills them into layered, proper-noun-free principles — the harness is the LLM, no key.
    (Claude Code uses parallel subagents; codex distills sequentially.)
 3. Synthesizes a portable **Operating Model** plus a dated **Environment Ledger**, and reports

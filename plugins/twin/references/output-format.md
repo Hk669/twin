@@ -95,6 +95,10 @@ this file.
 _How I operate — distilled by twin from <N> sessions across <M> harnesses on <YYYY-MM-DD>.
 Portable: principles only, no project specifics. Regenerate with `/twin:profile`._
 
+_Agent: these are my defaults — apply them without being asked. A line's condition decides
+when it applies; when two lines pull opposite ways, the matching condition picks; if neither
+condition clearly applies, ask me rather than averaging them._
+
 ## <Category in Title Case>
 - **<principle, one sentence, no proper nouns>** — <why it matters / what it optimizes for>. _(<K> sessions)_
 - **<principle>** — <why>. Applies <condition>. _(tentative)_
@@ -110,22 +114,22 @@ Per-line rules:
 - Every line must pass the north-star test (see `distillation.md`): true and useful on a
   project the person has never touched.
 
+The `_Agent:_` preamble is part of the template — it is what turns the file from a
+*description of* the user into an *instruction to* the agent reading it. Keep it.
+
 ## Template B — environment-ledger.md (dated, disposable)
 ```markdown
 # Environment Ledger
 _Context as of <YYYY-MM-DD> — verify before relying. Disposable specifics, NOT how I think._
 
-## Repos & branches
-- <repo/branch fact from the environment layer>
-
-## Tools & services
-- <tool/service fact>
-
-## Data & tables
-- <table/dataset fact>
+## <Section named from the facts>
+- <environment-layer fact>
 ```
-Include only sections that have content. Everything here is quarantined out of the Operating
-Model.
+Section names are **derived from the facts**, like categories — don't impose an engineering
+frame. An engineer's ledger might say "Repos & branches / Tools & services / Data & tables"; a
+PM's "Products & launches / Tools & systems / Key docs"; a salesperson's "Accounts & territory
+/ CRM & tooling / Active deals". Include only sections that have content. Everything here is
+quarantined out of the Operating Model.
 
 ## Worked example
 A small but realistic Operating Model (abbreviated):
@@ -172,6 +176,10 @@ that is mostly environment trivia.
 - **Proper-noun leaks** = list every Operating-Model line that still names a repo / branch /
   file / tool / tenant / table / env-var. For each: climb it (rewrite without the noun) or move
   it to the Environment Ledger. Re-compute after fixing.
+- **Horoscope spot-check** = for each Operating-Model line, ask: *would the opposite be
+  implausible for anyone in this role?* If yes, the line is Barnum filler — sharpen it from the
+  concrete claims in its cluster or cut it (the full rubric lives in `auditing.md`; this is the
+  ship-time version so day one is never a horoscope).
 - **Counts** = sessions read, harnesses covered, facts distilled, lines in the Operating Model,
   lines in the Ledger.
 - If portability is low (a large share is environment), **say so loudly and fix it** before

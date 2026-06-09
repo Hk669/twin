@@ -152,3 +152,9 @@ CANDIDATES (the user authored or confirmed them, so give them a higher confidenc
 ## Output
 When distilling a batch, return ONLY a JSON array of fact objects in the schema above — no
 prose, no fences — and append each object as one line to `claims.jsonl`.
+
+**Yield: a substantive session typically gives 1–5 facts, and zero is a valid outcome.** You
+are panning for gold, not summarizing — emit only what survives the north-star test and the
+skip list. Ten facts from one session almost always means the altitude is too low (you are
+logging the session, not distilling the person). Recurrence ACROSS sessions is what makes a
+principle strong; repeating it from within one session adds nothing.
