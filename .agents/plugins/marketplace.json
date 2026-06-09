@@ -1,14 +1,14 @@
 {
-  "name": "praxis",
+  "name": "twin",
   "interface": {
-    "displayName": "Praxis"
+    "displayName": "Twin"
   },
   "plugins": [
     {
-      "name": "praxis",
+      "name": "twin",
       "source": {
         "source": "local",
-        "path": "./plugins/praxis"
+        "path": "./plugins/twin"
       },
       "policy": {
         "installation": "AVAILABLE",

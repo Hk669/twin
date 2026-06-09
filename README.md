@@ -1,10 +1,10 @@
-# Praxis
+# Twin
 
 **A plugin for Claude Code and codex that turns your scattered agent sessions into a portable operating-profile.**
 
 You run multiple agent harnesses — Claude Code, codex, a personal agent, more. Each
 hoards its own session traces in its own folder, and no single tool has the merged
-picture of *how you actually operate*. Praxis harvests those sessions across every
+picture of *how you actually operate*. Twin harvests those sessions across every
 harness on your machine, distills how you work into **contextual** facts, and
 synthesizes one portable `AGENTS.md` profile any agent can load.
 
@@ -18,7 +18,7 @@ The promise is to capture **how you operate** so it transfers to a project you'v
 touched — not a log of what you did last month. Four things make that real:
 
 **Climb to the principle.** "Branches off `beta`" is a log entry; *"branches off the team's
-integration branch, never assumes main is the base"* is the operating model. Praxis climbs
+integration branch, never assumes main is the base"* is the operating model. Twin climbs
 every behavior to its principle and **bans proper nouns** (repo / branch / file / tenant
 names) from the portable layer — they get demoted to evidence.
 
@@ -30,7 +30,7 @@ Ledger** (your current repos and tools, belongs per-project).
 experimenting*, require green CI *for an existing system* — kept as context-dependent
 guidance, never flattened.
 
-**It grades itself.** Before shipping, Praxis reports a **portability %** and flags any
+**It grades itself.** Before shipping, Twin reports a **portability %** and flags any
 operating-model line still carrying a proper noun, so it can't quietly hand you a profile
 that's mostly environment trivia.
 
@@ -38,19 +38,19 @@ that's mostly environment trivia.
 
 **Claude Code:**
 ```
-/plugin marketplace add Hk669/praxis
-/plugin install praxis@praxis
-/praxis:profile
+/plugin marketplace add Hk669/twin
+/plugin install twin@twin
+/twin:profile
 ```
 
 **Codex:**
 ```
-codex plugin marketplace add Hk669/praxis
-codex plugin add praxis@praxis
+codex plugin marketplace add Hk669/twin
+codex plugin add twin@twin
 ```
-Then ask codex to "build my operating profile" (or pick the Praxis starter prompt).
+Then ask codex to "build my operating profile" (or pick the Twin starter prompt).
 
-Either way, Praxis:
+Either way, Twin:
 1. Harvests your sessions from every harness (more than 10 messages each), dropping tool
    noise and eval/automation runs, and scrubbing secrets.
 2. Distills them into layered, proper-noun-free principles — the harness is the LLM, no key.
@@ -95,7 +95,7 @@ harness sessions ──▶ harvest (script) ──▶ distill (subagents) ──
 ## Status
 
 Early and iterative. The plugin works end to end; the contextual-knowledge model and the
-relational claim structure are the active work. See `docs/` for design and learnings.
+relational claim structure are the active work.
 
 ## License
 

@@ -3,7 +3,7 @@ name: profile
 description: Build the user's portable operating-profile from their lived agent sessions across every harness on this machine (Claude Code, codex, hermes, ...). Harvests sessions, distills how the user operates into layered, proper-noun-free principles, and synthesizes a portable Operating Model (plus a quarantined Environment Ledger) the user's agents can load. Use when the user says "profile me", "build my operating profile", "what does my agent know about how I work", or invokes the profile command.
 ---
 
-# Praxis — Operator Profile
+# Twin — Operator Profile
 
 Turn the user's scattered agent sessions into a PORTABLE operating-profile. You (the
 harness) are the language model for this job, so there is no API key and no external model.
@@ -18,7 +18,7 @@ Everything is local. Nothing leaves the machine.
 - **`<plugin-root>`** = this plugin's installed directory (`${CLAUDE_PLUGIN_ROOT}` on Claude
   Code; otherwise resolve this plugin's install path).
 - **`<work-dir>`** = a writable output folder (`${CLAUDE_PLUGIN_DATA}` on Claude Code;
-  otherwise `./.praxis/`).
+  otherwise `./.twin/`).
 
 ## Step 1 — harvest
 Run the bundled harvester (sweeps the harnesses, keeps sessions with more than 10 messages,

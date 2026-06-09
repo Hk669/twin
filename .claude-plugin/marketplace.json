@@ -1,13 +1,13 @@
 {
-  "name": "praxis",
+  "name": "twin",
   "owner": {
     "name": "HK669"
   },
-  "description": "Praxis — turn your scattered agent sessions into a portable operating-profile.",
+  "description": "Twin — turn your scattered agent sessions into a portable operating-profile.",
   "plugins": [
     {
-      "name": "praxis",
-      "source": "./plugins/praxis",
+      "name": "twin",
+      "source": "./plugins/twin",
       "description": "Harvest your agent sessions across every harness on this machine and distill a portable operating-profile (AGENTS.md). The harness is the LLM — no API key needed.",
       "version": "0.1.0",
       "license": "MIT",
