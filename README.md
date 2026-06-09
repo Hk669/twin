@@ -1,6 +1,6 @@
 # Twin
 
-**A plugin for Claude Code and codex that turns your scattered agent sessions into a portable operating-profile.**
+**A plugin for Claude Code and codex that turns your scattered agent sessions into a portable operating-profile — and keeps it alive.**
 
 You run multiple agent harnesses — Claude Code, codex, a personal agent, more. Each
 hoards its own session traces in its own folder, and no single tool has the merged
@@ -8,9 +8,10 @@ picture of *how you actually operate*. Twin harvests those sessions across every
 harness on your machine, distills how you work into **contextual** facts, and
 synthesizes one portable `AGENTS.md` profile any agent can load.
 
-Inside the harness (Claude Code or codex), the harness *is* the LLM, so there's no API
-key, no model to pull, nothing to configure. It's all local, secrets are scrubbed, and you
-own the output.
+Twin is not code — it's a **playbook**. The harness already has the data and the tools;
+Twin hands it the operating manual: pure-markdown skills and reference files the harness
+executes itself. No API key, no model to pull, nothing to configure. It's all local,
+secrets are scrubbed, and you own the output.
 
 ## The core idea: a portable operating model, not a project log
 
@@ -34,13 +35,17 @@ guidance, never flattened.
 operating-model line still carrying a proper noun, so it can't quietly hand you a profile
 that's mostly environment trivia.
 
+**It stays alive.** A profile built once decays into a horoscope. Twin is four playbooks,
+not one: build it, refresh it incrementally, audit it against its own evidence, and query
+it mid-task.
+
 ## Install
 
 **Claude Code:**
 ```
 /plugin marketplace add Hk669/twin
 /plugin install twin@twin
-/twin:profile
+/twin:profile        # then later: /twin:update · /twin:audit · /twin:query
 ```
 
 **Codex:**
@@ -59,34 +64,51 @@ Either way, Twin:
    its own portability score.
 4. Offers to install the Operating Model globally and the Environment Ledger per-project, with consent.
 
+## The suite
+
+| Skill | What it does |
+|---|---|
+| **`profile`** | The full build: triage → distill → synthesize → self-eval → install. |
+| **`update`** | Incremental refresh — distills only sessions newer than the last run, re-synthesizes over all claims, shows you the diff. |
+| **`audit`** | Adversarial grading — verifies every line against its cited evidence (supported / overreach / unfounded), screens for horoscope lines, finds unconditioned contradictions, re-scores portability. Delivers a scorecard with a trust grade. |
+| **`query`** | "How do I usually handle X?" — answers from the claims with citations and conditions, or says plainly that the profile doesn't know. Works for other agents pulling your operating context mid-task. |
+
 ## How it works
 
-**No runtime code.** Twin is pure markdown — `SKILL.md` instructions plus a reference
+**No runtime code.** Twin is pure markdown — skill playbooks plus a shared reference
 registry. The harness *is* the runtime: it reads the registry, finds your sessions with its
 own tools, and does the distillation itself. Nothing in this repo executes at profile time.
 
 ```
 harness sessions ──▶ triage ──────────▶ distill (subagents) ──▶ synthesize ──▶ AGENTS.md
-.claude/.codex/...    registry + Glob    raw JSONL, read direct,   merge,
+.claude/.codex/...    registry + Glob    raw JSONL, read direct,   merge, link,
                       >10-msg gate        condition per fact         keep conditions
 ```
 
-One skill, `profile`, drives the whole thing; the concrete knowledge lives in reference files it
-loads only when it needs them (progressive disclosure):
+Four skill playbooks share one reference library, loaded only at the step that needs it
+(progressive disclosure):
 
 ```
-plugins/twin/skills/profile/
-├── SKILL.md                       the autonomous orchestrator (triage → distill → synthesize)
+plugins/twin/
+├── skills/
+│   ├── profile/SKILL.md           full build: triage → distill → synthesize → self-eval
+│   ├── update/SKILL.md            incremental refresh from sessions newer than the last run
+│   ├── audit/SKILL.md             adversarial grading of every claim against its evidence
+│   └── query/SKILL.md             cited answers to "how do I usually handle X?"
 └── references/
-    ├── harnesses.md               registry: per-harness sessions + memory, JSONL schema (with
-    │                              sample lines), noise to ignore, secrets to redact, the gate
-    ├── distillation.md            how to climb a transcript into facts — with worked examples
-    └── output-format.md           exact AGENTS.md template, self-eval rubric, install routing
+    ├── harnesses.md               registry: per-harness sessions + memory (Claude Code, codex,
+    │                              Cursor, Gemini CLI, Aider, opencode, Copilot, hermes, …),
+    │                              schemas with sample lines, noise, secrets, the gate
+    ├── distillation.md            how to climb a transcript into claims — with worked examples
+    ├── output-format.md           synthesis + link pass, exact templates, self-eval, install routing
+    └── auditing.md                the four audit checks, verdicts, scorecard, prescribed fixes
 ```
 
 Output is two files (categories are headings, not a directory): `AGENTS.md` — the portable
 **Operating Model**, installs global — and `environment-ledger.md` — your dated specifics,
-installs per-project. Both compile from `claims.jsonl`, the regenerable source of truth.
+installs per-project. Both compile from `claims.jsonl`, the regenerable source of truth, where
+each claim carries a stable id and (after synthesis) relation edges — `refines`,
+`conflicts_with`, `depends_on` — that the audit and query playbooks traverse.
 
 ## Governance
 
@@ -96,20 +118,23 @@ installs per-project. Both compile from `claims.jsonl`, the regenerable source o
 
 ## Roadmap
 
-- **Relational claim structure (the main one).** Move facts from a flat list to a
-  structured, relational form the agent can consume well: conditions composed into a
-  decision tree, explicit relationships between facts (refines / contradicts / depends-on),
-  and an indexed shape an agent navigates instead of reading every claim.
-- **Better harness integration.** A `query_profile` MCP tool so agents pull the relevant
-  operating-context mid-task, and an incremental `SessionEnd` hook that distills only the
-  session that just ended (never re-running the whole history) so the profile stays live.
-- **More harness adapters.** Cursor, Windsurf, Aider, Copilot — adding one is a few lines in
-  the `skills/profile/references/harnesses.md` registry (sessions glob + role/content fields), no code.
+- **Deeper relational structure.** Claims now carry `refines` / `conflicts_with` / `depends_on`
+  edges drawn at synthesis; next is composing conditions into a navigable decision tree so an
+  agent walks to the right principle instead of reading every claim.
+- **Automatic freshness.** A `SessionEnd` hook that runs the `update` playbook on just the
+  session that ended, and a `query_profile` MCP tool as the always-on version of the `query`
+  skill.
+- **An eval benchmark.** Three levels, borrowed from personalization/memory research: extraction
+  faithfulness (the `audit` checks, scored against a gold set), profile quality (Barnum rate,
+  portability), and downstream lift (does loading the profile measurably improve an agent on
+  real tasks, with bias controls).
+- **More harness adapters.** Cline, Roo, Zed, … — adding one is a few lines in the
+  `plugins/twin/references/harnesses.md` registry (sessions glob + role/content fields), no code.
 
 ## Status
 
-Early and iterative. The plugin works end to end; the contextual-knowledge model and the
-relational claim structure are the active work.
+Early and iterative. The four playbooks work end to end; the relational claim structure and
+the eval benchmark are the active work.
 
 ## License
 

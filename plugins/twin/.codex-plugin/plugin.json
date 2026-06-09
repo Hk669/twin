@@ -1,7 +1,7 @@
 {
   "name": "twin",
-  "version": "0.5.0",
-  "description": "Harvest your agent sessions across every harness on this machine and distill a portable operating-profile (AGENTS.md). The harness is the LLM, so no API key is needed.",
+  "version": "0.6.0",
+  "description": "Harvest your agent sessions across every harness on this machine and distill a portable operating-profile (AGENTS.md) — then keep it alive: update incrementally, audit it against its evidence, query it mid-task. Pure-markdown playbooks; the harness is the LLM, so no API key is needed.",
   "author": {
     "name": "HK669"
   },
@@ -12,14 +12,14 @@
   "interface": {
     "displayName": "Twin",
     "shortDescription": "Build a portable operating-profile from your agent sessions",
-    "longDescription": "Twin harvests your AI-agent sessions across every harness on this machine (Claude Code, codex, hermes), distills how you operate into cited, context-dependent facts, and synthesizes one portable AGENTS.md operating-profile your agents can load. Local-only, secrets scrubbed, and the harness is the LLM so no API key is needed.",
+    "longDescription": "Twin harvests your AI-agent sessions across every harness on this machine, distills how you operate into cited, context-dependent facts, and synthesizes one portable AGENTS.md operating-profile your agents can load. Four playbooks keep it alive: profile (full build), update (incremental refresh), audit (grade every claim against its evidence), query (ask 'how do I usually handle X?' with citations). Local-only, secrets scrubbed, and the harness is the LLM so no API key is needed.",
     "developerName": "HK669",
     "category": "Productivity",
     "capabilities": ["Interactive", "Write"],
     "defaultPrompt": [
       "Build my operating profile from my agent sessions",
-      "Profile how I work and write an AGENTS.md",
-      "What does my agent know about how I work?"
+      "Update my operating profile with my recent sessions",
+      "Audit my operating profile against its evidence"
     ]
   }
 }
