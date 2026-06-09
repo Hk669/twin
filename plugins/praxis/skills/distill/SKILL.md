@@ -68,6 +68,23 @@ When two principles seem to conflict, find the distinguishing condition and keep
 done on existing or production systems"). Never flatten, never pick a winner. Conditions
 must also be proper-noun-free.
 
+## Memory-sourced material (CLAUDE.md, MEMORY.md, USER.md, saved memories) — never copy as-is
+Some sources are not transcripts but the user's own saved memory and instruction files.
+Treat them as strong CANDIDATES for the operating model (the user authored or confirmed
+them, so give them a higher confidence prior) — but **do not copy them verbatim**. Run them
+through the SAME pipeline:
+- **Climb.** Memory is the most environment-laced source there is ("this project uses X",
+  "the proxy is Y", tool setup). Extract the transferable principle; route project/tool
+  specifics to `environment` like any other.
+- **Gate.** Apply the north-star test. A saved memory enters the operating model ONLY if it
+  would still help on a project the person has never touched.
+- **Add, don't echo.** Keep memory that ADDS to the operating model (a principle not yet
+  captured, or stronger evidence for one). Drop restated tooling/config.
+- **Never re-ingest your own output.** Skip any section a profiling tool previously wrote
+  (a generated operating profile) — re-eating it inbreeds the profile.
+A fact that appears in BOTH memory and lived transcripts is the strongest signal there is:
+authored intent confirmed by behavior. Rank it highest.
+
 ## Skip entirely
 - Topic-specific content (the actual task or domain).
 - Anything true of almost any developer.
