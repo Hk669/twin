@@ -1,7 +1,7 @@
 ---
 name: distill
 description: Rules for extracting operating-facts from a session transcript. Read this BEFORE writing any claims. Governs the claim schema, the all-important `condition` field, how to treat apparent contradictions (they are context-dependent, not conflicts to flatten), and how to build knowledge relationships instead of flat lists.
-disable-model-invocation: true
+disable-model-invocation: false
 ---
 
 # Distilling operating-facts — write context, not flat rules

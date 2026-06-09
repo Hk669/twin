@@ -1,6 +1,6 @@
 # Praxis
 
-**A Claude Code plugin that turns your scattered agent sessions into a portable operating-profile.**
+**A plugin for Claude Code and codex that turns your scattered agent sessions into a portable operating-profile.**
 
 You run multiple agent harnesses — Claude Code, codex, a personal agent, more. Each
 hoards its own session traces in its own folder, and no single tool has the merged
@@ -8,8 +8,9 @@ picture of *how you actually operate*. Praxis harvests those sessions across eve
 harness on your machine, distills how you work into **contextual** facts, and
 synthesizes one portable `AGENTS.md` profile any agent can load.
 
-Inside Claude Code the harness *is* the LLM — so there's no API key, no model to pull,
-nothing to configure. It's all local, secrets are scrubbed, and you own the output.
+Inside the harness (Claude Code or codex), the harness *is* the LLM, so there's no API
+key, no model to pull, nothing to configure. It's all local, secrets are scrubbed, and you
+own the output.
 
 ## The core idea: context, not flat facts
 
@@ -24,18 +25,27 @@ That relational, conditional knowledge is the gold — not the bare claims.
 
 ## Install
 
+**Claude Code:**
 ```
 /plugin marketplace add Hk669/praxis
 /plugin install praxis@praxis
 /praxis:profile
 ```
 
-`/praxis:profile`:
+**Codex:**
+```
+codex plugin marketplace add Hk669/praxis
+codex plugin add praxis@praxis
+```
+Then ask codex to "build my operating profile" (or pick the Praxis starter prompt).
+
+Either way, Praxis:
 1. Harvests your sessions from every harness on the machine (more than 10 messages each),
    dropping tool noise and scrubbing secrets.
-2. Distills them with parallel subagents — Claude is the LLM, no key.
+2. Distills them into contextual facts — the harness is the LLM, no key. (Claude Code uses
+   parallel subagents; codex distills sequentially.)
 3. Synthesizes your `AGENTS.md` operating-profile.
-4. Offers to install it into `~/.claude/CLAUDE.md` (global) or a project, with your consent.
+4. Offers to install it into your harness's global instructions or a project, with consent.
 
 ## How it works
 

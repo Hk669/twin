@@ -1,0 +1,20 @@
+{
+  "name": "praxis",
+  "interface": {
+    "displayName": "Praxis"
+  },
+  "plugins": [
+    {
+      "name": "praxis",
+      "source": {
+        "source": "local",
+        "path": "./plugins/praxis"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

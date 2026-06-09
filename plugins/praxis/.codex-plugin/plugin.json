@@ -1,0 +1,25 @@
+{
+  "name": "praxis",
+  "version": "0.2.0",
+  "description": "Harvest your agent sessions across every harness on this machine and distill a portable operating-profile (AGENTS.md). The harness is the LLM, so no API key is needed.",
+  "author": {
+    "name": "HK669"
+  },
+  "repository": "https://github.com/Hk669/praxis",
+  "license": "MIT",
+  "keywords": ["context", "profile", "agents", "harvest", "operating-profile"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Praxis",
+    "shortDescription": "Build a portable operating-profile from your agent sessions",
+    "longDescription": "Praxis harvests your AI-agent sessions across every harness on this machine (Claude Code, codex, hermes), distills how you operate into cited, context-dependent facts, and synthesizes one portable AGENTS.md operating-profile your agents can load. Local-only, secrets scrubbed, and the harness is the LLM so no API key is needed.",
+    "developerName": "HK669",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Write"],
+    "defaultPrompt": [
+      "Build my operating profile from my agent sessions",
+      "Profile how I work and write an AGENTS.md",
+      "What does my agent know about how I work?"
+    ]
+  }
+}
