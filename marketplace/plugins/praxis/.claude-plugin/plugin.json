@@ -1,0 +1,10 @@
+{
+  "name": "praxis",
+  "description": "Harvest your agent sessions across every harness on this machine and distill a portable operating-profile (AGENTS.md). The harness is the LLM — no API key needed.",
+  "version": "0.2.0",
+  "author": {
+    "name": "HK669"
+  },
+  "license": "MIT",
+  "keywords": ["context", "profile", "agents", "harvest", "operating-profile"]
+}
