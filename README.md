@@ -25,7 +25,7 @@ That relational, conditional knowledge is the gold — not the bare claims.
 ## Install
 
 ```
-/plugin marketplace add <this-repo-url>
+/plugin marketplace add Hk669/praxis
 /plugin install praxis@praxis
 /praxis:profile
 ```
