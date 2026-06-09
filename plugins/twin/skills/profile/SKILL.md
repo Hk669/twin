@@ -1,6 +1,6 @@
 ---
 name: profile
-description: "Build the user's portable operating-profile from their lived agent sessions across every harness on this machine (Claude Code, codex, hermes, and any others). Harvests sessions and memory, climbs how the user operates into layered, proper-noun-free principles, and synthesizes a portable Operating Model (plus a dated Environment Ledger) their agents can load. Use this whenever the user says 'profile me', 'build my operating profile', 'what does my agent know about how I work', 'capture how I work', 'make an AGENTS.md for me', or invokes the profile command — even if they don't say the word 'twin'."
+description: "Build the user's portable operating-profile from their lived agent sessions across every harness on this machine (Claude Code, codex, Cursor, Gemini CLI, Aider, opencode, Copilot, hermes, and any others). Harvests sessions and memory, climbs how the user operates into layered, proper-noun-free principles, and synthesizes a portable Operating Model (plus a dated Environment Ledger) their agents can load. Use this whenever the user says 'profile me', 'build my operating profile', 'what does my agent know about how I work', 'capture how I work', 'make an AGENTS.md for me', or invokes the profile command — even if they don't say the word 'twin'."
 ---
 
 # Operator Profiling
@@ -38,7 +38,7 @@ Two compiled files in the work-dir, plus the structured source they come from:
 ## Workflow
 
 ### 1. Triage — find the sessions worth reading
-Read **`<plugin-root>/skills/profile/references/harnesses.md`** — it is the map: per harness,
+Read **`<plugin-root>/references/harnesses.md`** — it is the map: per harness,
 the sessions glob, the exact JSONL shape (with sample lines), the memory files, the noise to
 ignore, the secrets to redact, and the substance gate.
 
@@ -48,7 +48,7 @@ build a **worklist** of survivors (path + harness). Also collect the memory file
 lists. Report the per-harness counts. If the worklist is empty, say so and stop.
 
 ### 2. Distill — climb behavior to principle (you are the LLM)
-Read **`<plugin-root>/skills/profile/references/distillation.md`** — it is the contract:
+Read **`<plugin-root>/references/distillation.md`** — it is the contract:
 the climb, the three layers (`mental_model` / `operating_habit` / `environment`), the
 proper-noun ban, the north-star test, free-text operating-dimension `theme`s (final categories
 are derived later at synthesis, NOT a fixed engineering list), conditions, and the worked
@@ -63,7 +63,7 @@ schema) as one JSON line to **`<work-dir>/claims.jsonl`**. Drop any fact whose e
 contain a secret.
 
 ### 3. Synthesize — operating model on top, environment quarantined
-Read **`<plugin-root>/skills/profile/references/output-format.md`** — it has the exact templates
+Read **`<plugin-root>/references/output-format.md`** — it has the exact templates
 and the synthesis recipe. Cluster equivalent principles across all sessions and harnesses,
 **derive a small set of categories that fit the user's actual role** (engineer, PM, designer,
 CX, sales, ops — never a fixed engineering list), rank by recurrence, keep the Operating Model
@@ -84,6 +84,10 @@ exactly what you'll write first:
   `twin:operating-model` markers so a re-run replaces the block instead of duplicating it.
 - **Environment Ledger → PER-PROJECT** (the current project's config) or left in the work-dir.
 
+Finally, **stamp the run**: write the current UTC ISO-8601 timestamp to
+`<work-dir>/last-run.txt`. The `update` skill reads this stamp to refresh incrementally —
+without it, every refresh is a full rebuild.
+
 ## Quality bar
 Before you call it done, check:
 - Every Operating-Model line passes the north-star test and contains **zero proper nouns**.
@@ -96,10 +100,17 @@ Before you call it done, check:
 - You reported the portability %, the leak list (ideally empty), and the counts.
 - You did not write to global config without explicit consent.
 
-## Reference files (read at the step that needs them)
-- `references/harnesses.md` — where sessions + memory live and how to read each harness. **Step 1–2.**
-- `references/distillation.md` — how to climb a transcript into facts, with worked examples. **Step 2.**
-- `references/output-format.md` — exact `AGENTS.md` template, self-eval rubric, install routing. **Step 3–5.**
+## Reference files (at `<plugin-root>/references/`, shared by the whole suite)
+- `harnesses.md` — where sessions + memory live and how to read each harness. **Step 1–2.**
+- `distillation.md` — how to climb a transcript into facts, with worked examples. **Step 2.**
+- `output-format.md` — exact `AGENTS.md` template, self-eval rubric, install routing. **Step 3–5.**
+
+## After the build — the profile is meant to stay alive
+This skill is the **full build**. Once it exists, point the user at the sibling skills (same
+work-dir, same references): **`update`** distills only sessions newer than the last run,
+**`audit`** grades every claim against its evidence, and **`query`** answers "how do I usually
+handle X?" from the claims with citations. A profile that is built once and never refreshed
+decays into a horoscope; the suite exists so it doesn't.
 
 ## Governance
 Local only. Secrets redacted at read time; drop any fact that would carry one. The user owns the
